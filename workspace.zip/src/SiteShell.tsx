@@ -3,13 +3,11 @@ import App from './App';
 import ContactPage from './components/ContactPage';
 import { News, newsService, supabase } from './lib/supabase';
 import { NewsDraft } from './data/draftNews';
-import { reformulateNews } from './utils/newsReformulator';
 
 type EditorRole = 'admin' | 'editor' | null;
 type ExtendedDraft = NewsDraft & { sourceUrl?: string; originalTitle?: string };
 
 const DB_MAP_KEY = 'drn_supabase_map';
-const SOCIAL_SEEN_KEY = 'drn_social_seen';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 function dbToDraft(row: any): ExtendedDraft {
@@ -173,58 +171,6 @@ function IntegrationBridge() {
     }
   };
 
-  const importSocialSources = async () => {
-    if (!role) return;
-
-    try {
-      const response = await fetch('/api/x-sources');
-      if (!response.ok) return;
-      const payload = await response.json();
-      if (payload?.status !== 'ok' || !Array.isArray(payload.items) || payload.items.length === 0) return;
-
-      const seen = new Set<string>(JSON.parse(localStorage.getItem(SOCIAL_SEEN_KEY) || '[]'));
-      const current = JSON.parse(localStorage.getItem('drn_news') || '[]') as ExtendedDraft[];
-      const imported: ExtendedDraft[] = [];
-
-      for (const item of payload.items) {
-        if (!item?.id || seen.has(item.id) || !String(item.text || '').toLowerCase().includes('flamengo')) continue;
-
-        const reformulated = reformulateNews({
-          originalTitle: String(item.text || '').slice(0, 180),
-          originalContent: String(item.text || ''),
-          source: 'Fonte social interna',
-        });
-
-        imported.push({
-          id: `x-${item.id}`,
-          title: reformulated.title,
-          excerpt: reformulated.excerpt,
-          content: reformulated.content,
-          category: reformulated.category,
-          author: 'Redação DRN',
-          image: '',
-          tags: Array.from(new Set(['Flamengo', ...reformulated.tags])).slice(0, 4),
-          status: 'pending',
-          createdAt: item.createdAt || new Date().toISOString(),
-          sourceUrl: item.url,
-          originalTitle: String(item.text || '').slice(0, 250),
-        });
-        seen.add(item.id);
-      }
-
-      if (imported.length > 0) {
-        const next = [...imported, ...current];
-        const serialized = JSON.stringify(next);
-        localStorage.setItem('drn_news', serialized);
-        localStorage.setItem(SOCIAL_SEEN_KEY, JSON.stringify(Array.from(seen).slice(-500)));
-        lastStorage.current = serialized;
-        await syncLocalDrafts(serialized);
-      }
-    } catch (error) {
-      console.warn('Fontes sociais indisponíveis', error);
-    }
-  };
-
   useEffect(() => {
     let active = true;
 
@@ -232,9 +178,7 @@ function IntegrationBridge() {
       const nextRole = await getEditorRole();
       if (!active) return;
       setRole(nextRole);
-      if (nextRole) {
-        await hydrateFromSupabase();
-      }
+      if (nextRole) await hydrateFromSupabase();
     };
 
     refreshRole();
@@ -245,11 +189,6 @@ function IntegrationBridge() {
       authListener.subscription.unsubscribe();
     };
   }, []);
-
-  useEffect(() => {
-    if (!role) return;
-    importSocialSources();
-  }, [role]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -269,7 +208,7 @@ function IntegrationBridge() {
   }, [role]);
 
   useEffect(() => {
-    const interceptAdmin = async (event: MouseEvent) => {
+    const interceptAdmin = (event: MouseEvent) => {
       const target = event.target as HTMLElement | null;
       const button = target?.closest('button[title="Painel Administrativo"]');
       if (!button || role) return;
