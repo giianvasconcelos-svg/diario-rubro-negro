@@ -102,7 +102,7 @@ const CORS_PROXIES = [
 
 export async function fetchFromRSS2JSON(rssUrl: string): Promise<FetchedNews[]> {
   const apiKey = ''; // Gratuito até 10.000 req/dia sem chave
-  const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&count=20`;
+  const apiUrl = `/api/rss?url=${encodeURIComponent(rssUrl)}`;
   
   try {
     const response = await fetch(apiUrl);
