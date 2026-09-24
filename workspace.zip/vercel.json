@@ -2,10 +2,15 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     { "source": "/noticias/:id", "destination": "/api/article?id=:id" },
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
     { "source": "/news-sitemap.xml", "destination": "/api/news-sitemap" },
     { "source": "/robots.txt", "destination": "/api/robots" },
     { "source": "/redacao", "destination": "/api/redacao" },
     { "source": "/contato", "destination": "/" },
+    { "source": "/sobre", "destination": "/" },
+    { "source": "/privacidade", "destination": "/" },
+    { "source": "/cookies", "destination": "/" },
+    { "source": "/termos", "destination": "/" },
     { "source": "/admin", "destination": "/" }
   ]
 }
