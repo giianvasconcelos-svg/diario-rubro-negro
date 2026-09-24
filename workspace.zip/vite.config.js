@@ -49,8 +49,55 @@ function editorialAppPatch() {
   };
 }
 
+function adsenseEditorialGuardPatch() {
+  const marker = 'Revisão editorial pendente';
+
+  return {
+    name: 'drn-adsense-editorial-guard',
+    enforce: 'pre',
+    transform(code, id) {
+      if (/[\\/]src[\\/]components[\\/]AutoNewsFetcher\.tsx$/.test(id)) {
+        const source = 'tags: reform.tags,';
+        const replacement = `tags: Array.from(new Set([...reform.tags, '${marker}'])),`;
+        if (!code.includes(source)) throw new Error('[drn-adsense-editorial-guard] AutoNewsFetcher mudou; revisão necessária');
+        return { code: code.replace(source, replacement), map: null };
+      }
+
+      if (/[\\/]src[\\/]components[\\/]NewsImporter\.tsx$/.test(id)) {
+        const source = 'tags: editedTags,';
+        const replacement = `tags: Array.from(new Set([...editedTags, '${marker}'])),`;
+        if (!code.includes(source)) throw new Error('[drn-adsense-editorial-guard] NewsImporter mudou; revisão necessária');
+        return { code: code.replace(source, replacement), map: null };
+      }
+
+      if (!/[\\/]src[\\/]components[\\/]AdminPanel\.tsx$/.test(id)) return null;
+
+      const approveSource = `  const handleApprove = (id: string) => {\n    setNews(prev => prev.map(n => \n      n.id === id ? { ...n, status: 'approved', reviewedAt: new Date().toISOString() } : n\n    ));\n    showSuccessMsg('Notícia aprovada com sucesso!');\n  };`;
+
+      const approveReplacement = `  const handleApprove = (id: string) => {\n    const item = news.find(n => n.id === id);\n    if (!item) return;\n    if (item.tags.includes('${marker}')) {\n      setEditingNews(item);\n      showSuccessMsg('Revisão editorial obrigatória: edite a matéria, acrescente contexto próprio e confirme a revisão antes de aprovar.');\n      return;\n    }\n    if ((item.content || '').trim().length < 700) {\n      setEditingNews(item);\n      showSuccessMsg('Padrão editorial interno: amplie a matéria para pelo menos 700 caracteres de conteúdo útil antes de aprovar.');\n      return;\n    }\n    setNews(prev => prev.map(n => \n      n.id === id ? { ...n, status: 'approved', reviewedAt: new Date().toISOString() } : n\n    ));\n    showSuccessMsg('Notícia aprovada com sucesso!');\n  };`;
+
+      if (!code.includes(approveSource)) throw new Error('[drn-adsense-editorial-guard] handleApprove mudou; revisão necessária');
+      code = code.replace(approveSource, approveReplacement);
+
+      const stateSource = `function NewsEditForm({ news, onSave, onCancel }: { news: NewsDraft; onSave: (n: NewsDraft) => void; onCancel: () => void }) {\n  const [form, setForm] = useState(news);`;
+      const stateReplacement = `function NewsEditForm({ news, onSave, onCancel }: { news: NewsDraft; onSave: (n: NewsDraft) => void; onCancel: () => void }) {\n  const [form, setForm] = useState(news);\n  const needsEditorialReview = form.tags.includes('${marker}');\n  const [editorialConfirmed, setEditorialConfirmed] = useState(!needsEditorialReview);\n\n  const saveWithReview = () => {\n    if (needsEditorialReview && !editorialConfirmed) {\n      alert('Confirme a revisão editorial antes de salvar esta matéria importada.');\n      return;\n    }\n    const tags = editorialConfirmed ? form.tags.filter(tag => tag !== '${marker}') : form.tags;\n    onSave({ ...form, tags, reviewedBy: editorialConfirmed ? 'Revisão editorial humana' : form.reviewedBy });\n  };`;
+
+      if (!code.includes(stateSource)) throw new Error('[drn-adsense-editorial-guard] NewsEditForm mudou; revisão necessária');
+      code = code.replace(stateSource, stateReplacement);
+
+      const buttonSource = `          <div className="flex items-center gap-3 pt-2">\n            <button onClick={() => onSave(form)} className="bg-red-600 text-white px-5 py-2.5 rounded-lg font-medium text-sm hover:bg-red-700 transition-colors">`;
+      const buttonReplacement = `          {needsEditorialReview && (\n            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">\n              <div className="font-bold text-amber-900 text-sm mb-2">Revisão humana obrigatória para conteúdo importado</div>\n              <p className="text-xs text-amber-800 mb-3">Confira os fatos, reescreva com linguagem própria e acrescente contexto ou análise útil da Redação DRN. Apenas trocar palavras ou sinônimos não é suficiente.</p>\n              <label className="flex items-start gap-2 text-sm text-amber-900 cursor-pointer">\n                <input type="checkbox" checked={editorialConfirmed} onChange={(e) => setEditorialConfirmed(e.target.checked)} className="mt-0.5" />\n                <span>Confirmo que revisei os fatos e acrescentei contribuição editorial própria antes da publicação.</span>\n              </label>\n            </div>\n          )}\n          <div className="flex items-center gap-3 pt-2">\n            <button onClick={saveWithReview} className="bg-red-600 text-white px-5 py-2.5 rounded-lg font-medium text-sm hover:bg-red-700 transition-colors">`;
+
+      if (!code.includes(buttonSource)) throw new Error('[drn-adsense-editorial-guard] botão de salvar mudou; revisão necessária');
+      code = code.replace(buttonSource, buttonReplacement);
+
+      return { code, map: null };
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [editorialAppPatch(), react(), tailwindcss()],
+  plugins: [adsenseEditorialGuardPatch(), editorialAppPatch(), react(), tailwindcss()],
   server: {
     host: "0.0.0.0",
     port: 3000,
