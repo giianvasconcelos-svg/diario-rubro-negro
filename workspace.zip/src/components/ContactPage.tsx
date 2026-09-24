@@ -60,23 +60,27 @@ export default function ContactPage() {
             </div>
             <div className="border border-gray-200 rounded-xl p-4">
               <h3 className="font-black text-gray-800 mb-2">Fontes e apuração</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">Informações externas podem ser usadas como ponto de partida para apuração e reescrita editorial. Links de origem são preservados internamente para conferência.</p>
+              <p className="text-sm text-gray-600 leading-relaxed">Informações externas podem ser usadas como ponto de partida para apuração. Materiais importados entram como rascunho e precisam de revisão humana e contribuição editorial própria antes da publicação.</p>
             </div>
             <div className="border border-gray-200 rounded-xl p-4">
               <h3 className="font-black text-gray-800 mb-2">Privacidade e transparência</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">O portal busca separar conteúdo editorial, opinião de usuários e publicidade, mantendo identificação clara de cada área.</p>
+              <p className="text-sm text-gray-600 leading-relaxed">O portal separa conteúdo editorial, opinião de usuários e publicidade e mantém páginas públicas sobre privacidade, cookies, termos de uso e funcionamento da redação.</p>
             </div>
           </div>
         </section>
       </main>
 
       <footer className="bg-black text-gray-400 mt-10">
-        <div className="max-w-5xl mx-auto px-4 py-6 text-sm flex flex-col md:flex-row gap-3 justify-between">
-          <span>© {new Date().getFullYear()} Diário Rubro-Negro</span>
-          <div className="flex gap-4">
+        <div className="max-w-5xl mx-auto px-4 py-6 text-sm">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 mb-3">
+            <a href="/sobre" className="text-gray-300 hover:text-white">Sobre</a>
             <a href="/redacao" className="text-gray-300 hover:text-white">Redação</a>
-            <a href="/news-sitemap.xml" className="text-gray-300 hover:text-white">Sitemap de notícias</a>
+            <a href="/privacidade" className="text-gray-300 hover:text-white">Privacidade</a>
+            <a href="/cookies" className="text-gray-300 hover:text-white">Cookies</a>
+            <a href="/termos" className="text-gray-300 hover:text-white">Termos de Uso</a>
+            <a href="/sitemap.xml" className="text-gray-300 hover:text-white">Sitemap</a>
           </div>
+          <span>© {new Date().getFullYear()} Diário Rubro-Negro · Portal independente e não oficial.</span>
         </div>
       </footer>
     </div>
